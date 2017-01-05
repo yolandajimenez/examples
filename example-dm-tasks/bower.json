@@ -1,0 +1,22 @@
+{
+  "name": "example-dm-tasks",
+  "authors": [
+  ],
+  "description": "This is Apps Data Manager, manage events, request and responses",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "web-component-tester": "^4.0.0",
+    "underscore": "~1.8.3",
+    "example-dp-tasks": "example-dp-tasks.git#^0.0.x"
+  }
+}

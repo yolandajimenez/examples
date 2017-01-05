@@ -1,0 +1,21 @@
+{
+  "name": "example-dp-tasks",
+  "authors": [
+  ],
+  "description": "Example of data provider.",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "web-component-tester": "^4.0.0",
+    "iron-ajax": "PolymerElements/iron-ajax#^1.2.0"
+  }
+}

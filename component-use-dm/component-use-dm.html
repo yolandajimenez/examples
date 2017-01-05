@@ -1,0 +1,316 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<link rel="import" href="../example-dm-tasks/example-dm-tasks.html">
+
+<link rel="import" href="elements/chart-header.html">
+<link rel="import" href="elements/chart-table.html">
+<link rel="import" href="elements/pie-chart.html">
+<link rel="import" href="elements/line-chart.html">
+<link rel="import" href="elements/discrete-bar-chart.html">
+<link rel="import" href="elements/line-chart-footer.html">
+<link rel="import" href="elements/chart-battery.html">
+
+<!--
+`component-use-dm`
+
+@group Molecules
+@hero hero.svg
+@demo demo/index.html
+@element component-use-dm
+-->
+
+<dom-module id="component-use-dm">
+
+    <template>
+
+        <style>
+        </style>
+
+
+        <example-dm-tasks
+                id="dm-tasks"
+                argument1="[[argument1BindValue]]"
+                argument2="[[argument2BindValue]]"
+                tasks-mocks-data="{{tasksMocksData}}"
+                tasks-mocks-search-value="{{tasksMocksSearchValue}}"
+                tasks-mocks-begin-date="[[tasksMocksBeginDate]]"
+                tasks-mocks-end-date="[[tasksMocksEndDate]]"
+                tasks-mocks-data-pagination="{{tasksMocksDataPagination}}"
+                tasks-mocks-data-selected-tab="[[tasksMocksSelectedTab]]" >
+        </example-dm-tasks>
+
+
+        <div class="container">
+
+        <section>
+
+              <div class="chart">
+                  <chart-header
+                      header="component-use-dm-tasks-mocks"
+                      last-update="[[tasksMocksDateUpdated]]"
+                      filter-date1="component-use-dm-custom-dates"
+                      filter-date2="component-use-dm-filter-date2"
+                      filter-date3="component-use-dm-last-month"
+                      placeholder="component-use-dm-placeholder-search"
+                      begin-date-format-date="{{tasksMocksBeginDate}}"
+                      end-date-format-date="{{tasksMocksEndDate}}"
+                      selected-tab="{{tasksMocksSelectedTab}}" >
+                  </chart-header>
+
+              
+                  <div id="tasksMocksDataContainer">
+                      <discrete-bar-chart data="{{chartask(tasksMocksDataPagination)}}"></discrete-bar-chart>
+
+                      <chart-table has-head="true" head="{{headTasks}}" body="{{tasksMocksDataPagination}}"></chart-table>
+                  </div>
+
+
+              </div>
+            </section>
+            
+            </div>
+        </div>
+
+    </template>
+
+
+    <script src="../underscore/underscore-min.js"></script>
+    <script>
+
+        (function (Polymer) {
+            'use strict';
+
+            Polymer({
+                is: 'component-use-dm',
+
+                behaviors: [
+                    Polymer.i18nBehavior
+                ],
+
+                properties: {
+                    
+
+                    argument1: {
+                        type: Object,
+                        value: function () {
+                            return {
+                                "label": "asdf",
+                                "items": [
+                                    {
+                                        value:   'asdf1',
+                                        content: 'text1'
+                                    },
+                                    {
+                                        value:   'asd2',
+                                        content: 'text2'
+                                    }
+                                ],
+                                "selected": "2222"
+                            };
+                        }
+                    },
+
+                    argument1BindValue: String,
+
+                    argument2: {
+                        type: Object,
+                        value: function () {
+                            return {
+                                "label": "asdf",
+                                "items": [
+                                    {
+                                        value:   'asdf1',
+                                        content: 'text1'
+                                    },
+                                    {
+                                        value:   'asd2',
+                                        content: 'text2'
+                                    }
+                                ],
+                                "selected": "2222"
+                            };
+                        }
+                    },
+
+                    argument2BindValue: String,
+
+
+                    route: {
+                        type: String,
+                        observer: '_onRouteChange'
+                    },
+
+
+                   
+                    // task usage
+                    tasksMocksData: {
+                        type: Array
+                    },
+
+                    tasksMocksDataPagination: {
+                        type: Array
+                    },
+
+                    tasksMocksBeginDate: {
+                        type: String
+                    },
+
+                    tasksMocksEndDate: {
+                        type: String
+                    },
+
+                    tasksMocksDateUpdated: {
+                        type: String
+                    },
+
+                    tasksMocksSearchValue: {
+                        type: String,
+                        value: ''
+                    },
+
+                    tasksMocksMessageType: {
+                        type: String,
+                        value: 'info'
+                    },
+
+                    tasksMocksMessage: {
+                        type: String,
+                        value: 'component-use-dm-nodata'
+                    },
+
+                    tasksMocksSelectedTab: {
+                        type: String
+                    },
+
+
+
+                    head_1: {
+                        type:  Array,
+                        value: function () {
+                            return ['component-use-dm-headtable-name',
+                                'component-use-dm-headtable-total-calls',
+                                'component-use-dm-headtable-success',
+                                'component-use-dm-headtable-blocked',
+                                'component-use-dm-headtable-other',
+                                'component-use-dm-headtable-total-success'];
+
+                        }
+                    },
+
+                    headTasks : {
+                        type : Array,
+                        value : function () {
+                            return ['component-use-dm-headtable-date',
+                                'component-use-dm-headtable-applicationid',
+                                'component-use-dm-headtable-api',
+                                'component-use-dm-headtable-service',
+                                'component-use-dm-headtable-consumed-tasks'];
+                        }
+                    }
+                },
+
+
+                listeners: {
+                    'dp-tasks:retrieve-success':   '_onDataRetrieved',
+                    'dp-tasks:retrieve-error':     '_onDataRetrieveError',
+                    'dp-tasks:retrieve-error-400': '_onDataRetrieveError',
+                    'dp-tasks:retrieve-error-500': '_onDataRetrieveError',
+                    'dp-tasks::request-sent':      '_showSpinner'
+                },
+
+
+
+                _onDataRetrieved: function (event, data) {
+                    this[data.type + 'DateUpdated'] = Date.now();
+                    this._showData(data.type);
+                },
+
+                _onDataRetrieveError: function (error, data) {
+                    this[data.type + 'DateUpdated'] = Date.now();
+                    this._showError(data.type, data.messageType, data.message);
+                },
+
+                attached: function () {
+                    this.argument2BindValue = this.argument2.selected;
+                    this.argument1BindValue      = this.argument1.selected;
+                },
+
+                chartask: function(bodytask){
+                    if(bodytask) {
+                        var that = this;
+                        var o_data = bodytask;
+                        var n_data = [];
+
+                        n_data.push({
+                            "key":"CumulativeReturn",
+                            "values":[]
+                        });
+
+                        Object.keys(o_data).forEach(function (subkey, i) {
+                            n_data[0].values.push({
+                                "x":o_data[subkey][0],
+                                "y":o_data[subkey][4]
+                            });
+                        });
+                    }
+
+                    return n_data;
+                },
+
+                _onRouteChange: function () {
+                    if (this.route === MY_tasks) {
+                        this._initPage();
+                    }
+                },
+
+                _initPage: function () {
+                    this.$['dm-tasks'].getSessionData();
+
+                    if (!this.$['dm-tasks'].isUsernameSet()) {
+                        return false;
+                    }
+
+                    this.$['dm-tasks'].retrieveAlltasksData();
+                },
+
+
+                _showData: function (type) {
+                    var node = this;
+
+                    if(node.$$('#'.concat(type).concat('Spinner')))
+                        node.$$('#'.concat(type).concat('Spinner')).classList.add('hidden');
+                    if(node.$$('#'.concat(type).concat('DataContainer')))
+                        node.$$('#'.concat(type).concat('DataContainer')).classList.remove('hidden');
+                    if(node.$$('#'.concat(type).concat('Error')))
+                        node.$$('#'.concat(type).concat('Error')).classList.add('hidden');
+                },
+
+                _showError: function (type, messageCardType, message) {
+                    var node = this;
+
+                    this._setMessageCard(type, messageCardType, message);
+
+                    if (node.$$('#'.concat(type).concat('Spinner')))
+                        node.$$('#'.concat(type).concat('Spinner')).classList.add('hidden');
+                    if (node.$$('#'.concat(type).concat('DataContainer')))
+                        node.$$('#'.concat(type).concat('DataContainer')).classList.add('hidden');
+                    if (node.$$('#'.concat(type).concat('Error'))) {
+                        node.$$('#'.concat(type).concat('Error')).classList.add('hidden');
+                        node.$$('#'.concat(type).concat('Error')).classList.remove('hidden');
+                    }
+                },
+
+        
+
+                _setMessageCard: function (type, messageCardType, message) {
+                    this[type + 'MessageType'] = messageCardType || 'info';
+                    this[type + 'Message']     = message;
+                }
+
+            });
+
+        })(Polymer)
+
+    </script>
+
+</dom-module>

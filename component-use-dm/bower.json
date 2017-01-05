@@ -1,0 +1,21 @@
+{
+  "name": "component-use-dm",
+  "authors": [
+  ],
+  "description": "statistics",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "^1.4.0",
+    "example-dm-tasks": "example-dm-tasks"
+  }
+}

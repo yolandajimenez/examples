@@ -1,0 +1,525 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../example-dp-tasks/example-dp-tasks.html">
+<link rel="import" href="../example-session/example-session.html">
+
+<!--
+`example-dm-tasks`
+
+@group Atoms
+@hero hero.svg
+@demo demo/index.html
+@element example-dm-tasks
+-->
+
+
+<dom-module id="example-dm-tasks">
+  <template>
+
+    <example-dp-tasks
+        id="dp-tasks-callsToTaskHome"
+        type="callsToTaskHome"
+        method="POST"
+        url="{{_endpointUrls.callsToTaskHome}}"
+        argument1="[[argument1]]"
+        argument2="[[argument2]]"
+        developer="[[developer]]"
+        begin-date="{{_dateToString(callsToTaskHomeBeginDate)}}"
+        end-date="{{_dateToString(callsToTaskHomeEndDate)}}"
+        data="{{callsToTaskHomeProviderData}}" >
+    </example-dp-tasks>
+
+    <example-dp-tasks
+        id="dp-tasks-mostActiveTaskHome"
+        type="mostActiveTaskHome"
+        method="POST"
+        url="{{_endpointUrls.mostActiveTaskHome}}"
+        argument1="[[argument1]]"
+        argument2="[[argument2]]"
+        developer="[[developer]]"
+        begin-date="{{_dateToString(mostActiveTaskHomeBeginDate)}}"
+        end-date="{{_dateToString(mostActiveTaskHomeEndDate)}}"
+        data="{{mostActiveTaskHomeProviderData}}" >
+    </example-dp-tasks>
+
+    <example-dp-tasks
+        id="dp-tasks-tasksMocks"
+        type="tasksMocks"
+        method="POST"
+        url="{{_endpointUrls.tasksMocks}}"
+        argument1="[[argument1]]"
+        argument2="[[argument2]]"
+        developer="[[developer]]"
+        begin-date="{{_dateToString(tasksMocksBeginDate)}}"
+        end-date="{{_dateToString(tasksMocksEndDate)}}"
+        data="{{tasksMocksProviderData}}" >
+    </example-dp-tasks>
+
+    <example-session id="session"></example-session>
+
+  </template>
+
+
+  <script>
+    (function (Polymer) {
+      'use strict';
+
+      var ID_PREFIX = 'dp-tasks-',
+
+          TYPES = [
+            'callsToTaskHome',
+            'mostActiveTaskHome',
+            'tasksMocks'
+          ],
+
+          ENDPOINT_URLS = {
+            'callsToTaskHome':    API_URL +  '/{developer}' + tasks_URL,
+            'mostActiveTaskHome': API_URL +  '/{developer}' + tasks_URL,
+            'tasksMocks':       API_URL + '/{developer}' + tasks_URL
+          },
+
+          SEARCH_FIELD_CALL_TO_TASK_HOME = 'name',
+          SEARCH_FIELD_TASKS_MOCKS    = 'name';
+
+
+      Polymer({
+        is: 'example-dm-tasks',
+
+        properties: {
+          type: {
+            type: String
+          },
+
+          argument1: {
+            type:  String
+//            observer: '_onParametersChange'
+          },
+
+          argument2: {
+            type:  String
+//            observer: '_onParametersChange'
+          },
+
+          developer: {
+            type: String
+          },
+
+
+          // calls to methods
+          callsToTaskHomeData: {
+            type: Array,
+            notify: true,
+            observer: '_onGraphDataChange'
+          },
+
+          callsToTaskHomeDataPagination: {
+            type: Array
+          },
+
+          callsToTaskHomeProviderData: {
+            type: Object,
+            observer: '_onProviderDataChange'
+          },
+
+          callsToTaskHomeBeginDate: {
+            type: String,
+            observer: '_callsToTaskHomeDateChanged'
+          },
+
+          callsToTaskHomeEndDate: {
+            type: String,
+            observer: '_callsToTaskHomeDateChanged'
+          },
+
+          callsToTaskHomeSearchValue: {
+            type: String,
+            observer: '_oncallsToTaskHomeSearchValueChange',
+            value: ''
+          },
+
+          callsToTaskHomeSelectedTab: {
+            type: String,
+            observer: '_callsToTaskHomeSelectedTabChange'
+          },
+
+
+          // most active methods
+          mostActiveTaskHomeData: {
+            type: Array,
+            notify: true
+          },
+
+          mostActiveTaskHomePieChartData: {
+            type: Array,
+            notify: true
+          },
+
+          mostActiveTaskHomeProviderData: {
+            type: Object,
+            observer: '_onProviderDataChange'
+          },
+
+          mostActiveTaskHomeBeginDate: {
+            type: Date,
+            observer: '_mostActiveTaskHomeDateChanged'
+          },
+
+          mostActiveTaskHomeEndDate: {
+            type: Date,
+            observer: '_mostActiveTaskHomeDateChanged'
+          },
+
+          mostActiveTaskHomeSelectedTab: {
+            type: String,
+            observer: '_mostActiveTaskHomeSelectedTabChange'
+          },
+
+          // ticket usage data
+          tasksMocksData: {
+            type: Array,
+            notify: true,
+            observer: '_onGraphDataChange'
+          },
+
+          tasksMocksDataPagination: {
+            type: Array
+          },
+
+          tasksMocksProviderData: {
+            type: Object,
+            observer: '_onProviderDataChange'
+          },
+
+          tasksMocksBeginDate: {
+            type: String,
+            observer: '_tasksMocksDateChanged'
+          },
+
+          tasksMocksEndDate: {
+            type: String,
+            observer: '_tasksMocksDateChanged'
+          },
+
+          tasksMocksSearchValue: {
+            type: String,
+            observer: '_ontasksMocksSearchValueChange',
+            value: ''
+          },
+
+          tasksMocksSelectedTab: {
+            type: String,
+            observer: '_tasksMocksSelectedTabChange'
+          }
+
+        },
+
+
+        listeners: {
+          'dp-tasks:retrieve-success': '_onDataRetrieved',
+          'dp-tasks:retrieve-error': '_onDataRetrieved'
+        },
+
+
+
+        observers: [
+
+        ],
+
+
+        ready: function () {
+          this._endpointUrls = ENDPOINT_URLS;
+
+          this.callsToTaskHomeSearchFieldName = SEARCH_FIELD_CALL_TO_TASK_HOME;
+          this.tasksMocksSearchFieldName    = SEARCH_FIELD_TASKS_MOCKS;
+
+          this._initRetrievedDataFlags();
+          this.getSessionData();
+        },
+
+        attached: function () {
+
+        },
+
+        _onParametersChange: function (argument1, argument2) {
+          if (!this._endpointUrls) {
+            return false;
+          }
+
+          this.retrieveAlltasksData();
+        },
+
+
+        _callsToTaskHomeSelectedTabChange: function () {
+          this._onSelectedTabChange('callsToTaskHome');
+        },
+
+        _mostActiveTaskHomeSelectedTabChange: function () {
+          this._onSelectedTabChange('mostActiveTaskHome');
+        },
+
+        _tasksMocksSelectedTabChange: function () {
+          this._onSelectedTabChange('tasksMocks');
+        },
+
+        _onSelectedTabChange: function (type) {
+          if (!this._endpointUrls ||
+              !this.hasRetrievedOnceAllData() ||
+              this[type + 'SelectedTab'] === 'customDates') {
+            return false;
+          }
+
+          this._setMinAndMaxDatesFromTab(type);
+          this.retrievetasksData(type);
+        },
+
+        _setMinAndMaxDatesFromTab: function (type) {
+          this[type + 'EndDate'] = moment().format('DD-MM-YYYY');
+
+          if (this[type + 'SelectedTab'] === 'lastWeek') {
+            this[type + 'BeginDate'] = moment().subtract(7, 'days').format('DD-MM-YYYY');
+          }
+          else if (this[type + 'SelectedTab'] === 'lastMonth') {
+            this[type + 'BeginDate'] = moment().subtract(1, 'month').format('DD-MM-YYYY');
+          }
+        },
+
+
+        _callsToTaskHomeDateChanged: function () {
+          this._onDateRangeChange('callsToTaskHome');
+        },
+
+        _mostActiveTaskHomeDateChanged: function () {
+          this._onDateRangeChange('mostActiveTaskHome');
+        },
+
+        _tasksMocksDateChanged: function () {
+          this._onDateRangeChange('tasksMocks');
+        },
+
+        _onDateRangeChange: function (type) {
+          if (!this._endpointUrls ||
+              !this.hasRetrievedOnceAllData() ||
+              this[type + 'SelectedTab'] !== 'customDates') {
+            return false;
+          }
+
+          this.retrievetasksData(type);
+        },
+
+        _onGraphDataChange: function (detail) {
+          //for example: function for pagination
+        },
+
+
+        _oncallsToTaskHomeSearchValueChange: function (newValue) {
+          this._onSearchValueChange('callsToTaskHome');
+        },
+
+        _ontasksMocksSearchValueChange: function (newValue) {
+          this._onSearchValueChange('tasksMocks');
+        },
+
+        _onSearchValueChange: function (type) {
+          var originalData,
+            searchRes;
+
+          if (!this[type + 'ProviderData'] || !this[type + 'ProviderData'].response) {
+            return false;
+          }
+
+          originalData = this[type + 'ProviderData'].response.detail.response;
+          this._searchTerm = this[type + 'SearchValue'];
+          this._searchFieldName = this[type + 'SearchFieldName'];
+
+          if (!this._searchTerm) {
+            searchRes = originalData;
+          }
+          else {
+            searchRes = originalData.filter(function (row) {
+              return (!!~row[this._searchFieldName].indexOf(this._searchTerm));
+            }.bind(this));
+          }
+
+          this[type + 'Data'] = this[this._getParseFunctionName(type)](searchRes);
+        },
+
+
+        _onProviderDataChange: function (newValue, oldValue) {
+          var response,
+              type;
+
+          if (!this._endpointUrls) {
+            return false;
+          }
+
+          if (!!newValue && !newValue.errorId &&
+              !!newValue.response && !!newValue.response.detail &&
+              !!newValue.response.detail.response) {
+            response = newValue.response.detail.response;
+            type     = newValue.type;
+
+            this[type + 'Data'] = this[this._getParseFunctionName(type)](response);
+          }
+        },
+
+        _getParseFunctionName: function (type) {
+          var prefix = '_parseResponse',
+              parseFunction = prefix + this._ucFirst(type);
+
+          return (!!this[parseFunction]) ? parseFunction : prefix;
+        },
+
+        _ucFirst: function (s) {
+          return s.charAt(0).toUpperCase() + s.substr(1);
+        },
+
+
+        _parseResponse: function (response) {
+          return response;
+        },
+
+        _parseResponsecallsToTaskHome: function (response) {
+          var formatted = [];
+
+          for (var i = 0; i < response.length; i++) {
+            formatted.push(this._parseRowcallsToTaskHome(response[i]));
+          }
+
+          return formatted;
+        },
+
+        _parseRowcallsToTaskHome: function (row) {
+          return [
+            row.name,
+            row.total,
+            row.success,
+            row.fail,
+            row.other,
+            {
+              tagName: 'chart-battery',
+              attributes: {
+                status: (row.percentageSuccess >= 50) ? 'ok' : 'ko',
+                level:  row.percentageSuccess
+              }
+            }
+
+          ];
+        },
+
+        _parseResponsemostActiveTaskHome: function (response) {
+          this._getmostActiveTaskHomePieChartData(response);
+          //parsear
+          var parsedResponse = [];
+          var row;
+          var index = 0;
+          var method;
+          for(method in response) {
+            row = [];
+            row[0] = index + 1;
+            row[1] = method;
+            row[2] = response[method];
+            parsedResponse[index] = row;
+            index++;
+          }
+          return parsedResponse;
+        },
+
+        _getmostActiveTaskHomePieChartData: function(response) {
+
+          var parsedResponse = [];
+          var row;
+          var index = 0;
+          var method;
+          for(method in response) {
+            row = JSON.stringify({x : method, y : response[method]});
+            parsedResponse[index] = JSON.parse(row);
+            index++;
+          }
+          this.mostActiveMethodsPieChartData = parsedResponse;
+        },
+
+        _parseResponsetasksMocks: function (response) {
+          return response;
+        },
+
+
+        getSessionData: function () {
+          var appSession = session.getSessionData();
+
+          if (!appSession || !appSession.username) {
+            session.destroySession();
+            this.developer = null;
+
+            return false;
+          }
+
+          this.developer = appSession.username;
+        },
+
+        isUsernameSet: function () {
+          return (!!this.developer);
+        },
+
+        retrieveAlltasksData: function () {
+          for (var i = 0; i < TYPES.length; i++) {
+            this.retrievetasksData(TYPES[i]);
+          }
+        },
+
+        retrievetasksData: function (type) {
+          var dpId = ID_PREFIX + type;
+
+          if (!~TYPES.indexOf(type)) {
+            return false;
+          }
+
+          this.$[dpId].retrieveDataByType(type);
+        },
+
+        hasRetrievedOnceAllData: function () {
+          var res = true;
+
+          if (!!this._retrievedAllData) {
+            return true;
+          }
+
+          for (var i = 0; i < TYPES.length; i++) {
+            res = res && this._retrievedData[TYPES[i]];
+          }
+
+          this._retrievedAllData = res;
+
+          return res;
+        },
+
+        _initRetrievedDataFlags: function () {
+          this._retrievedData    = {};
+          this._retrievedAllData = false;
+
+          for (var i = 0; i < TYPES.length; i++) {
+            this._retrievedData[TYPES[i]] = false;
+          }
+        },
+
+        _onDataRetrieved: function (e, detail) {
+          this._retrievedData[detail.type] = true;
+        },
+
+        _dateToString: function(date) {
+//          return moment(date).format('YYYY-MM-DD');
+          var split;
+
+          if (!date) {
+            return false;
+          }
+
+          split = date.split('-');
+
+          return split[2].concat('-').concat(split[1]).concat('-').concat(split[0]);
+        }
+
+
+      });
+    })
+    (Polymer)
+  </script>
+</dom-module>

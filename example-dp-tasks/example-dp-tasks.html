@@ -1,0 +1,407 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
+
+<!--
+`example-dp-tasks`
+
+@group Atoms
+@hero hero.svg
+@demo demo/index.html
+@element example-dp-tasks
+-->
+
+
+<dom-module id="example-dp-tasks">
+  <template>
+    <iron-ajax id="xhrTasks"
+               method="[[method]]"
+               url="[[url]]">
+    </iron-ajax>
+  </template>
+
+
+  <script>
+    (function (Polymer) {
+      'use strict';
+
+
+      Polymer({
+        is: 'example-dp-tasks',
+
+        behaviors: [
+        ],
+
+        properties: {
+          type: {
+            type: String
+          },
+
+          url: {
+            type: String
+          },
+
+          method: {
+            type: String
+          },
+
+          argument1: {
+            type: String
+          },
+
+          argument2: {
+            type: String
+          },
+
+          developer: {
+            type: String
+          },
+
+          beginDate: {
+            type: String
+          },
+
+          endDate: {
+            type: String
+          },
+
+          data: {
+            type:   Object,
+            value:  {},
+            notify: true
+          }
+        },
+
+
+        attached: function () {
+          this.listen(this.$.xhrTasks, 'response', this._getHandlerId('response'));
+          this.listen(this.$.xhrTasks, 'error', this._getHandlerId('error'));
+        },
+
+        _getEndpointUrl: function () {
+          return this._replaceWildcards(this.url);
+        },
+
+        _replaceWildcards: function (url) {
+          var wildcards = url.match(/\{([a-zA-Z\-]+)\}/g),
+              wildcardKeys;
+
+          wildcardKeys = wildcards.map(function (match) {
+            return match.replace('{', '').replace('}', '');
+          });
+
+          for (var i = 0; i < wildcards.length; i++) {
+            if (!!this[wildcardKeys[i]]) {
+              url = url.replace(wildcards[i], this[wildcardKeys[i]]);
+            }
+          }
+
+          return url;
+        },
+
+
+        _getHandlerId: function (result) {
+          var typeString = '',
+              handler,
+              defaultHandler;
+
+          result = (result === 'response' || result === 'error') ? result : 'error';
+
+          if (!!this.type) {
+            typeString = this._ucFirst(this.type);
+          }
+
+          handler        = '_handle' + typeString + this._ucFirst(result);
+          defaultHandler = '_handle' + this._ucFirst(result);
+
+          return (!!this.handler) ? handler : defaultHandler;
+        },
+
+        _ucFirst: function (s) {
+          return s.charAt(0).toUpperCase() + s.substr(1);
+        },
+
+
+        /* REQUESTS HANDLERS */
+        _handleResponse: function (response) {
+          var data = {};
+
+          data.type        = this.type;
+          data.response    = response;
+          data.messageType = 'info';
+          data.message     = 'mensaje-respuesta';
+//data.response = {detail: {
+//    response: this.getMockData()
+//}};
+          this.data = data;
+
+          if (_.isEmpty(response.detail.response) || this._isTotalDataZero(data)) {
+            this.fire('dp-tasks:retrieve-error', data);
+          }
+          else {
+            this.fire('dp-tasks:retrieve-success', data);
+          }
+        },
+
+        _handleError: function (e, detail) {
+          var errorId = 'dp-tasks:retrieve-error',
+              data    = {};
+
+          // trigger general error event first, then specific one
+          this.fire(errorId, { type: this.type });
+
+          switch (e.detail.request.status) {
+            case 401:
+            case 403:
+              this.handleUnAuthorizedResponse(e.detail);
+              break;
+
+            case 400:
+              errorId += '-400';
+              break;
+
+            case 500:
+              errorId += '-500';
+              break;
+
+            default:
+              errorId += '-500';
+              break;
+          }
+
+          data.errorId     = errorId;
+          data.type        = this.type;
+          data.response    = detail;
+          data.messageType = 'error';
+          data.message     = 'mensaje-de-error';
+//data.response = {detail: {
+//    response: this.getMockData()
+//}};
+//delete(data.errorId);
+//this.fire('dp-Tasks:retrieve-success', data);
+          this.data = data;
+          this.fire(errorId, data);
+        },
+
+
+        // calls endpoint
+        _handlecallsToTaskHomeResponse: function (response) {
+          this._handleResponse(response);
+        },
+
+        _handlecallsToTaskHomeError: function (e, detail) {
+          this._handleError(e, detail);
+        },
+
+        _handlemostActiveTaskHomeResponse: function (response) {
+          this._handleResponse(response);
+        },
+
+        _handlemostActiveTaskHomeError: function (e, detail) {
+          this._handleError(e, detail);
+        },
+
+        _handletasksMocksResponse: function (response) {
+          this._handleResponse(response);
+        },
+
+        _handletasksMocksError: function (e, detail) {
+          this._handleError(e, detail);
+        },
+
+
+        /* REQUESTS GENERATORS */
+        retrieveDataByType: function () {
+          var prefix = '_get' + this._ucFirst(this.type) + 'Request';
+
+          this.$.xhrTasks.headers = this[prefix + 'Headers']();
+          this.$.xhrTasks.body    = this[prefix + 'Body']();
+          this.$.xhrTasks.url     = this._getEndpointUrl();
+          this.$.xhrTasks.generateRequest();
+
+          this.fire('dp-Tasks::request-sent', { type: this.type });
+        },
+
+        _getRequestHeaders: function () {
+          return {
+            'Content-Type':            'application/json',
+            'X-Unique-Transaction-ID': String(Date.now())
+          };
+        },
+
+        _getRequestBody: function () {
+          return {
+            "from":        this.beginDate,
+            "to":          this.endDate,
+            "argument2": this.argument2.toUpperCase()
+          };
+        },
+
+
+        // calls endpoint
+        _getcallsToTaskHomeRequestHeaders: function () {
+          return this._getRequestHeaders();
+        },
+
+        _getcallsToTaskHomeRequestBody: function () {
+          return this._getRequestBody();
+        },
+
+        _getmostActiveTaskHomeRequestHeaders: function () {
+          return this._getRequestHeaders();
+        },
+
+        _getmostActiveTaskHomeRequestBody: function () {
+          return this._getRequestBody();
+        },
+
+        _gettasksMocksRequestHeaders: function () {
+          return this._getRequestHeaders();
+        },
+
+        _gettasksMocksRequestBody: function () {
+//          return this._getRequestBody();
+          return {};
+        },
+
+
+        _isTotalDataZero : function (eventData) {
+          if(eventData.type !== 'numberOfCalls') {
+            return false;
+          }
+          var data = eventData.response.detail.response;
+          var success = Object.keys(data.success).reduce(function (p, a) {
+            return p + parseInt(data.success[a]);
+          }, 0);
+          var blocked = Object.keys(data.fail).reduce(function (p, a) {
+            return p + parseInt(data.fail[a]);
+          }.bind(this), 0);
+          var others = Object.keys(data.other).reduce(function (p, a) {
+            return p + parseInt(data.other[a]);
+          }.bind(this), 0);
+          return (success + blocked + others) === 0 ? true : false;
+        },
+
+
+
+
+getMockData: function () {
+  switch (this.type) {
+    case 'callsToTaskHome':
+      return this.mockCalls();
+      break;
+
+    case 'mostActiveTaskHome':
+      return this.mockMethods();
+      break;
+
+    case 'tasksMocks':
+      return this.mocktasksMocks();
+      break;
+  }
+},
+
+
+mockCalls: function () {
+  return [
+    {
+      "name":              "accounts@v1 - GET#/me/accounts",
+      "total":             "8",
+      "success":           "3",
+      "fail":              "5",
+      "other":             "0",
+      "percentageSuccess": "37"
+    }, {
+      "name":              "accounts@v1 - GET#/me/accounts/{accountId}",
+      "total":             "3",
+      "success":           "1",
+      "fail":              "2",
+      "other":             "0",
+      "percentageSuccess": "33"
+    }, {
+      "name":              "cards@v1 - GET#/me/cards",
+      "total":             "6",
+      "success":           "4",
+      "fail":              "2",
+      "other":             "0",
+      "percentageSuccess": "66"
+    }, {
+      "name":              "cards@v1 - GET#/me/cards/{cardId}",
+      "total":             "2",
+      "success":           "0",
+      "fail":              "2",
+      "other":             "0",
+      "percentageSuccess": "0"
+    }, {
+      "name":              "cards@v1 - GET#/me/cards/{cardId}/transactions",
+      "total":             "1",
+      "success":           "0",
+      "fail":              "1",
+      "other":             "0",
+      "percentageSuccess": "0"
+    }, {
+      "name":              "idargument1@v1 - GET#/me",
+      "total":             "5",
+      "success":           "2",
+      "fail":              "3",
+      "other":             "0",
+      "percentageSuccess": "40"
+    }, {
+      "name":              "idargument1@v2 - GET#/me-basic",
+      "total":             "1",
+      "success":           "0",
+      "fail":              "1",
+      "other":             "0",
+      "percentageSuccess": "0"
+    }
+  ];
+},
+
+mockMethods: function () {
+  return {
+    "accounts-sbx@v1 - GET - /me/accounts/{accountId}/transactions": "2055",
+    "money-transfers-sbx@v1 - POST - /me/transfer-orders":           "2053",
+    "accounts-sbx@v1 - GET - /me/accounts":                          "2299",
+    "accounts-sbx@v1 - GET - /me/accounts/{accountId}":              "8742",
+    "accounts@v1 - GET - /me/accounts":                              "1488"
+  };
+},
+
+
+
+mocktasksMocks: function () {
+  return [
+    ['01/03/2015', 'demo_probandodev', 'Node', 'test-date', 1],
+    ['02/03/2015', 'demo_probandodev', 'Node', 'test-date', 2],
+    ['03/03/2015', 'demo_probandodev', 'Node', 'test-date', 3],
+    ['04/03/2015', 'demo_probandodev', 'Node', 'test-date', 4],
+    ['05/03/2015', 'demo_probandodev', 'Node', 'test-date', 5],
+    ['06/03/2015', 'demo_probandodev', 'Node', 'test-date', 6],
+    ['07/03/2015', 'demo_probandodev', 'Node', 'test-date', 7],
+    ['08/03/2015', 'demo_probandodev', 'Node', 'test-date', 8],
+    ['09/03/2015', 'demo_probandodev', 'Node', 'test-date', 9],
+    ['10/03/2015', 'demo_probandodev', 'Node', 'test-date', 10],
+    ['11/03/2015', 'demo_probandodev', 'Node', 'test-date', 11],
+    ['12/03/2015', 'demo_probandodev', 'Node', 'test-date', 12],
+    ['13/03/2015', 'demo_probandodev', 'Node', 'test-date', 13],
+    ['14/03/2015', 'demo_probandodev', 'Node', 'test-date', 14],
+    ['15/03/2015', 'demo_probandodev', 'Node', 'test-date', 15],
+    ['16/03/2015', 'demo_probandodev', 'Node', 'test-date', 16],
+    ['17/03/2015', 'demo_probandodev', 'Node', 'test-date', 17],
+    ['18/03/2015', 'demo_probandodev', 'Node', 'test-date', 18],
+    ['19/03/2015', 'demo_probandodev', 'Node', 'test-date', 19],
+    ['20/03/2015', 'demo_probandodev', 'Node', 'test-date', 20],
+    ['21/03/2015', 'demo_probandodev', 'Node', 'test-date', 21],
+    ['22/03/2015', 'demo_probandodev', 'Node', 'test-date', 22],
+    ['23/03/2015', 'demo_probandodev', 'Node', 'test-date', 23],
+    ['24/03/2015', 'demo_probandodev', 'Node', 'test-date', 24],
+    ['25/03/2015', 'demo_probandodev', 'Node', 'test-date', 25]
+  ];
+}
+
+      });
+    })
+    (Polymer)
+
+  </script>
+
+</dom-module>
